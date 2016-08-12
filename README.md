@@ -1,5 +1,7 @@
 # One Button Game Challenge - Tap Dungeon
 
+https://itch.io/jam/one-button-to-rule-all-jam
+
 ## Usage
 
 Need [node.js](http://nodejs.org) and [npm](http://npmjs.com).
