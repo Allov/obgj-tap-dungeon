@@ -9,4 +9,8 @@ class Game extends Phaser.Game {
 	}
 }
 
+Math.rnd = (i, j) => {
+    return Math.floor(Math.random() *i) + j;
+}
+
 new Game();
