@@ -10,7 +10,12 @@ class Game extends Phaser.Game {
 }
 
 Math.rnd = (i, j) => {
-    return Math.floor(Math.random() *i) + j;
+    return Math.floor(Math.random() * j) + i;
+}
+
+Math.chanceRoll = (chance) => {
+    if (chance === undefined) { chance = 50; }
+    return chance > 0 && (Math.random() * 100 <= chance);
 }
 
 new Game();

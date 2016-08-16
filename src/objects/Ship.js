@@ -1,5 +1,5 @@
 export default class Ship {
-    constructor(name, game, x, y, direction, asset) {
+    constructor(name, game, x, y, direction, asset, stats) {
         this.name = name;
         this.game = game;
         this.x = x;
@@ -7,16 +7,12 @@ export default class Ship {
         this.direction = direction;
         this.asset = asset;
 
-        this.health = 1;
+        this.stats = stats;
         this.ready = false;
     }
 
-    preload() {
-        this.game.load.image(this.name, this.asset);
-    }
-
     create() {
-        this.sprite = this.game.add.sprite(this.x, this.y, this.name);
+        this.sprite = this.game.add.sprite(this.x, this.y, this.asset);
         this.sprite.scale.setTo(0.2, 0.2);
         this.sprite.alpha = 0;
 
@@ -28,13 +24,25 @@ export default class Ship {
     }
 
     hit(damage) {
-        this.health -= damage;
+        this.stats.health -= damage;
 
-        if (this.health <= 0) {
+        if (this.stats.health <= 0) {
             this.idle.stop();
             this.dead = true;
             this.game.add.tween(this.sprite).to({ x: this.x + 50, y: this.y + 20, alpha: 0 }, 1500, 'Sine.easeInOut', true, 0, 0);
+            this.sprite.kill();
+            this.ready = false;
         }
+    }
+
+    attack(object, multiplier) {
+        const dmg = this.stats.damage * multiplier;
+        object.hit(dmg);
+
+        return dmg;
+    }
+
+    award(content) {
     }
 
     render() {
