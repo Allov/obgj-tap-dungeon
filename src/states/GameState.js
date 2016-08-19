@@ -93,6 +93,10 @@ export default class GameState extends Phaser.State {
         this.game.debug.text(`${this.player.stats.coins} coins`, 20, 60, '#0FF');
         this.game.debug.text(`${this.player.stats.health} health`, 20, 80, '#F88');
 
+        if (this.nextAttack > this.game.time.now) {
+            this.game.debug.text(`${this.nextAttack-this.game.time.now}ms`, 400, 250, '#FF0');
+        }
+
         if (this.currentCombo || this.decaying) {
             this.game.debug.text(`${this.currentCombo.text}! ${this.counter}x`, 200, 200, `rgba(${this.currentCombo.color}, ${this.color})`);
             this.decaying = true;
@@ -106,6 +110,11 @@ export default class GameState extends Phaser.State {
             }
         }
 
+        if (this.nextAttack <= this.game.time.now) {
+            this._attack();
+            this.nextAttack = this.game.time.now + this.ennemy.stats.attackSpeed;
+        }
+
         if (this.ennemy.ready) {
             this.metronome.enable();
         }
@@ -113,6 +122,7 @@ export default class GameState extends Phaser.State {
         if (this.ennemy.dead && !this.accelerate) {
             this.accelerate = true;
             this.metronome.disable();
+            this.nextAttack = null;
             this.game.add.tween(this).to({ acceleration: 0.3 }, 3000, null, true, 0, 0)
                 .onComplete.add(() => {
                     this.accelerate = false;
@@ -139,7 +149,7 @@ export default class GameState extends Phaser.State {
 
     _initAudio() {
         this.audio = new Audio();
-        this.audio.volume = 0.3;
+        this.audio.volume = 0;
         this.audio.crossOrigin = 'Anonymous';
 
         this.audio.src = 'assets/hh1.ogg';
@@ -159,6 +169,8 @@ export default class GameState extends Phaser.State {
             this._resetOrAddToCurrentCombo(GameState.Combos.WEAK);
         } else {
             this._resetOrAddToCurrentCombo(GameState.Combos.FAILED);
+
+            if (this.nextAttack) this.nextAttack -= 500;
         }
 
         this.shoot.dispatch({
@@ -191,11 +203,20 @@ export default class GameState extends Phaser.State {
         if (Math.chanceRoll(80)) {
             const asset = `ennemy${Math.rnd(1, 3)}`;
             this.ennemy = new Ennemy('ennemy', this.game, 500, 100, -1, asset, { health: Math.rnd(5, 10), damage: 1 });
+
+            this.nextAttack = this.game.time.now + this.ennemy.stats.attackSpeed;
         } else {
             this.ennemy = new Crate('crate', this.game, 500, 100, -1, 'box');
         }
 
         this.ennemy.create();
+    }
+
+    _attack() {
+        if (this.ennemy.ready && !this.ennemy.dead) {
+            this.player.hit(this.ennemy.stats.damage);
+            this.game.camera.shake(0.001 * (this.player.stats.maxHealth - this.player.stats.health));
+        }
     }
 }
 
