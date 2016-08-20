@@ -6,16 +6,19 @@ export default class Ennemy extends Ship {
     constructor(name, game, x, y, direction, asset, stats, content) {
         super(name, game, x, y, direction, asset, stats);
 
-        this.stats = Object.assign({}, this.stats, stats, {
+        this.stats = {
             health: 10,
             damage: 1,
             attackSpeed: 5000 // in ms
-        });
+        };
+        this.stats = Object.assign({}, this.stats, stats);
 
-        this.content = Object.assign({}, this.content, content, {
+        this.content = {
             xp: Math.rnd(10, 20),
             coins: Math.rnd(1, 2)
-        });
+        };
+
+        this.content = Object.assign({}, this.content, content);
     }
 
     create() {

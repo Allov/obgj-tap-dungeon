@@ -23,6 +23,7 @@ export default class Crate {
         this.failures = 0;
 
         this.ready = false;
+        this.onReady = new Phaser.Signal();
     }
 
     create() {
@@ -31,7 +32,10 @@ export default class Crate {
         this.sprite.scale.setTo(0.2);
 
         const intro = this.game.add.tween(this.sprite).to({ x: this.x + (this.direction * 200), alpha: 1 }, 2000, 'Sine.easeInOut', true, 0, 0);
-        intro.onComplete.add(() => this.ready = true);
+        intro.onComplete.add(() => {
+            this.ready = true;
+            this.onReady.dispatch(this);
+        });
 
         this.idle = this.game.add.tween(this.sprite).to( { x: this.x + (this.direction * 200), y: this.y + Math.rnd(7, 15) }, Math.rnd(500,700), 'Sine.easeInOut', false, -1, false, true);
         intro.chain(this.idle);

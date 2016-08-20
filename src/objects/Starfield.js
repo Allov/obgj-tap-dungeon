@@ -21,36 +21,46 @@ export default class Starfield {
     create() {
         this.star = this.game.make.sprite(0, 0, 'star');
 
-        this.textures.push(this.game.add.renderTexture(500, 500, 'starfield_texture1'));
-        this.textures.push(this.game.add.renderTexture(500, 500, 'starfield_texture2'));
-        this.textures.push(this.game.add.renderTexture(500, 500, 'starfield_texture3'));
+        this.textures.push(this.game.add.renderTexture(this.w, this.h, 'starfield_texture1'));
+        this.textures.push(this.game.add.renderTexture(this.w, this.h, 'starfield_texture2'));
+        this.textures.push(this.game.add.renderTexture(this.w, this.h, 'starfield_texture3'));
 
         let color = 0xAAAAAA;
         let i = 0;
+        let speed = 1;
         for (let texture of this.textures) {
-            this.sprites.push(this.game.add.sprite(0, 0, texture));
-            this.sprites[i].tint = color;
-            this.sprites[i].alpha = 0.4;
+            for(let i = 0; i < 2; i++) {
+                const field = this._createFieldTexture(color, texture, speed, i, false /*trailing effect*/);
+                this.sprites.push(field);
+            }
+
             color += 0x222222;
+            speed += 1;
             i++;
         }
 
-        let speed = 7;
         let texture = -1;
-
         for(let i = 0; i < this.count; i++) {
-            if (i % 100 == 0) {
-                speed--;
+            let clear = false;
+            if (i % (this.count / this.textures.length)  == 0) {
+                clear = true;
                 texture++;
             }
 
-            this.stars.push({
-                x: this.game.world.randomX,
-                y: this.game.world.randomY,
-                speed,
-                texture: this.textures[texture]
-            });
+            this.textures[texture].renderXY(this.star, this.game.world.randomX, this.game.world.randomY, clear);
         }
+    }
+
+    _createFieldTexture(color, texture, speed, position, trailingEffectOnly) {
+        const field = this.game.add.sprite(0, 0, texture);
+        field.tint = color;
+        field.alpha = 0.4;
+        field.x = (this.w + 1) * position; // make it so it follows the first sprite
+        field.speed = speed;
+        field.trailingEffectOnly = trailingEffectOnly;
+        field.visible = !trailingEffectOnly;
+
+        return field;
     }
 
     accelerate(acceleration) {
@@ -62,10 +72,10 @@ export default class Starfield {
 
         if (acceleration > 0) {
             this._alpha += acceleration;
-            this._scale += acceleration;
+            // this._scale += acceleration;
         } else {
             this._alpha -= 0.007;
-            this._scale -= 0.007;
+            // this._scale -= 0.007;
         }
 
         if (this._alpha > 1) {
@@ -86,27 +96,22 @@ export default class Starfield {
 
         for (let sprite of this.sprites) {
             sprite.alpha = this._alpha;
-            sprite.scale.setTo(this._scale, 1);
+            //sprite.scale.setTo(this._scale, 1);
         }
     }
 
     render() {
-        for(let i = 0; i < this.count; i++) {
-            this.stars[i].x -= (this.stars[i].speed * this.speed);
+        for(let sprite of this.sprites) {
+            this._moveSprite(sprite);
+        }
+    }
 
-            if (this.stars[i].x < 0) {
-                this.stars[i].x = 600;
-                this.stars[i].y = this.game.world.randomY;
-            }
+    _moveSprite(sprite) {
+        sprite.x -= sprite.speed * this.speed;
 
-            if (i % 100 == 0)
-            {
-                //  If it's the first star of the layer then we clear the texture
-                this.stars[i].texture.renderXY(this.star, this.stars[i].x, this.stars[i].y, true);
-            } else {
-                //  Otherwise just draw the star sprite where we need it
-                this.stars[i].texture.renderXY(this.star, this.stars[i].x, this.stars[i].y, false);
-            }
+        const w = this.w; // (this.w * this._scale);
+        if (sprite.x + w < 0) {
+            sprite.x = w + 1; // going back to the queue!
         }
     }
 }

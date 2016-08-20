@@ -5,6 +5,8 @@ import Starfield from '../objects/Starfield';
 import Planet from '../objects/Planet';
 import Metronome from '../objects/Metronome';
 import Crate from '../objects/Crate';
+import { config } from './StateConfig';
+import { text } from '../helpers/Helpers';
 
 export default class GameState extends Phaser.State {
 
@@ -25,23 +27,20 @@ export default class GameState extends Phaser.State {
         super();
 
         this.shoot = new Phaser.Signal();
-
-        const self = this;
-        document.getElementById('mute').onclick = () => {
-            self.audio.volume = 0;
-        };
     }
 
     preload() {
-        this.BPM = 87.5;
+        this.game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL
 
-        this.starfield = new Starfield('starfield', this.game, 300, 500, 500);
+        this.BPM = 175;
+        this.shipPosition = 300;
+        //this.BPM = 87.5;
+
+        this.starfield = new Starfield('starfield', this.game, 300, this.game.scale.width, this.game.scale.height);
         this.starfield.preload();
 
         this.planet = new Planet('sun', this.game, 250, 200, 'assets/sun.svg');
         this.planet.preload();
-
-        this.metronome = new Metronome('metronome', this.game, 250, 400, 200, 30, this.BPM, { weak: 0.2, good: 0.1, great: 0.05 });
 
         this.game.load.image('player', 'assets/player.svg');
         this.game.load.image('ennemy1', 'assets/ennemy1.svg');
@@ -49,15 +48,20 @@ export default class GameState extends Phaser.State {
         this.game.load.image('ennemy3', 'assets/ennemy3.svg');
         this.game.load.image('box', 'assets/box.svg');
         this.game.load.image('tech', 'assets/tech.svg');
+        this.game.load.audio('game_audio', 'assets/dnd3-3.ogg');
     }
 
     create() {
-        this.quarterNote = GameState.MINUTE_IN_MS / this.BPM;
+        this.audio = this.game.sound.play('game_audio');
+        this.audio.mute = !config.soundOn;
+
+        this.metronome = new Metronome('metronome', this.game, this.audio, 250, 700, 200, 30, this.BPM, { weak: 0.2, good: 0.1, great: 0.05 });
+        this.metronome.beat.add(this._beat, this);
 
         this.thresholds = {
-            great: this.quarterNote * 0.05, // +/- 5%, ex: BPM=60s, quarterNote=1000ms, great = press > 900 || press < 100
-            good: this.quarterNote * 0.1,
-            weak: this.quarterNote * 0.2
+            great: this.metronome.quarterNote * 0.05, // +/- 5%, ex: BPM=60s, quarterNote=1000ms, great = press > 900 || press < 100
+            good: this.metronome.quarterNote * 0.1,
+            weak: this.metronome.quarterNote * 0.2
         };
 
         this.acceleration = 0;
@@ -68,37 +72,38 @@ export default class GameState extends Phaser.State {
 
         this.game.input.keyboard.addKeyCapture([Phaser.Keyboard.C, Phaser.Keyboard.A]);
         this.game.input.keyboard.addKey(Phaser.Keyboard.C).onDown.add(this._check, this);
+        this.game.input.onTap.add(this._checkTap, this);
         this.accelerateKey = this.game.input.keyboard.addKey(Phaser.Keyboard.A);
 
         this.starfield.create();
 
         this.metronome.create();
-        this.game.beat = this.game.time.events.loop(this.quarterNote, this._beat, this);
 
         this._spawnEnnemy();
 
-        this.player = new Player('player', this.game, -170, 100, 1, 'player', { health: 20, damage: 1 });
+        this.player = new Player('player', this.game, -170, this.shipPosition, 1, 'player', { health: 20, damage: 1 });
         this.player.create();
 
-        this._initAudio();
-
-        // this.planet.create();
+        this.loading = text(this.game, 'loading...', this.game.world.centerX, this.game.world.centerY, { fill: '#FFF' });
     }
 
     render() {
-        const timeLeft = this.game.time.events.duration.toFixed(0);
-        this.game.debug.text(`Time until next beat: ${timeLeft}`, 20, 20);
+        if (!this.audio.isDecoded) {
+            this.starfield.render();
+            return;
+        } else {
+            this.loading.visible = false;
+        }
 
         this.game.debug.text(`${this.player.stats.xp} xp`, 20, 40, '#0F0');
         this.game.debug.text(`${this.player.stats.coins} coins`, 20, 60, '#0FF');
         this.game.debug.text(`${this.player.stats.health} health`, 20, 80, '#F88');
 
         if (this.nextAttack > this.game.time.now) {
-            this.game.debug.text(`${this.nextAttack-this.game.time.now}ms`, 400, 250, '#FF0');
+            this.game.debug.text(`${this.nextAttack - this.game.time.now}ms`, 400, 250, '#FF0');
         }
 
         if (this.currentCombo || this.decaying) {
-            this.game.debug.text(`${this.currentCombo.text}! ${this.counter}x`, 200, 200, `rgba(${this.currentCombo.color}, ${this.color})`);
             this.decaying = true;
             this.color -= this.colorDecay;
 
@@ -115,13 +120,9 @@ export default class GameState extends Phaser.State {
             this.nextAttack = this.game.time.now + this.ennemy.stats.attackSpeed;
         }
 
-        if (this.ennemy.ready) {
-            this.metronome.enable();
-        }
-
         if (this.ennemy.dead && !this.accelerate) {
             this.accelerate = true;
-            this.metronome.disable();
+            //this.metronome.disable();
             this.nextAttack = null;
             this.game.add.tween(this).to({ acceleration: 0.3 }, 3000, null, true, 0, 0)
                 .onComplete.add(() => {
@@ -142,36 +143,38 @@ export default class GameState extends Phaser.State {
         this.starfield.accelerate(this.acceleration);
         this.starfield.render();
 
-        if (!this.audio.paused) {
-            this.metronome.render();
-        }
+        this.metronome.render();
     }
 
-    _initAudio() {
-        this.audio = new Audio();
-        this.audio.volume = 0;
-        this.audio.crossOrigin = 'Anonymous';
-
-        this.audio.src = 'assets/hh1.ogg';
-        this.audio.play();
+    _checkTap() {
+        this._check(null, 150);
     }
 
-    _check() {
-        if (!this.ennemy.ready || this.ennemy.dead) return;
+    _check(e, delay = 50) {
+        //if (!this.ennemy.ready || this.ennemy.dead) return;
 
-        const timeLeft = this.game.time.events.duration.toFixed(0);
+        const timeLeft = this.metronome.untilNextBeat + this.metronome.bnb + delay; // +50ms for synchronisation? That's just for me though... need to adjust per player
+
+        console.log(timeLeft, this.thresholds.great, this.metronome.quarterNote);
+
         let failed = false;
-        if (timeLeft > (this.quarterNote - this.thresholds.great) || timeLeft < this.thresholds.great) {
+        if (timeLeft > (this.metronome.quarterNote - this.thresholds.great) || timeLeft < this.thresholds.great) {
             this._resetOrAddToCurrentCombo(GameState.Combos.GREAT);
-        } else if (timeLeft > (this.quarterNote - this.thresholds.good) || timeLeft < this.thresholds.good) {
+        } else if (timeLeft > (this.metronome.quarterNote - this.thresholds.good) || timeLeft < this.thresholds.good) {
             this._resetOrAddToCurrentCombo(GameState.Combos.GOOD);
-        } else if (timeLeft > (this.quarterNote - this.thresholds.weak) || timeLeft < this.thresholds.weak) {
+        } else if (timeLeft > (this.metronome.quarterNote - this.thresholds.weak) || timeLeft < this.thresholds.weak) {
             this._resetOrAddToCurrentCombo(GameState.Combos.WEAK);
         } else {
             this._resetOrAddToCurrentCombo(GameState.Combos.FAILED);
 
             if (this.nextAttack) this.nextAttack -= 500;
         }
+
+        const t = text(this.game, `${this.currentCombo.text}!`, this.game.world.centerX, this.game.world.centerY + 200, { font: 'bold 45px Lucida Console', fill: `rgba(${this.currentCombo.color}, 1)` });
+        this.game.add.tween(t).to({ y: t.y - 50, alpha: 0 }, 1000, Phaser.Easing.Sinusoidal.Out, true, 0, 0, false)
+            .onComplete.add(() => t.kill());
+
+        this.game.add.tween(t.scale).to({ x: 1 + this.currentCombo.multiplier, y: 1 + this.currentCombo.multiplier }, 1000, Phaser.Easing.Sinusoidal.Out, true, 0, 0, false)
 
         this.shoot.dispatch({
             combo: this.currentCombo,
@@ -183,16 +186,16 @@ export default class GameState extends Phaser.State {
     _resetOrAddToCurrentCombo(combo) {
         this.color = 1.0;
 
-        if (this.alreadyCounted || _.isEqual(combo, GameState.Combos.FAILED)) {
-            this.counter = 0;
-            this.currentCombo = GameState.Combos.FAILED;
-            this.game.camera.shake(0.01);
-        } else {
+        // if (this.alreadyCounted || _.isEqual(combo, GameState.Combos.FAILED)) {
+        //     this.counter = 0;
+        //     this.currentCombo = GameState.Combos.FAILED;
+        //     // this.game.camera.shake(0.01);
+        // } else {
             this.alreadyCounted = true;
 
             this.currentCombo = combo;
             this.counter += this.currentCombo.multiplier;
-        }
+        // }
     }
 
     _beat() {
@@ -202,20 +205,23 @@ export default class GameState extends Phaser.State {
     _spawnEnnemy() {
         if (Math.chanceRoll(80)) {
             const asset = `ennemy${Math.rnd(1, 3)}`;
-            this.ennemy = new Ennemy('ennemy', this.game, 500, 100, -1, asset, { health: Math.rnd(5, 10), damage: 1 });
+
+            const health = Math.rnd(5, 10);
+            this.ennemy = new Ennemy('ennemy', this.game, 500, this.shipPosition, -1, asset, { health, damage: 1 });
 
             this.nextAttack = this.game.time.now + this.ennemy.stats.attackSpeed;
         } else {
-            this.ennemy = new Crate('crate', this.game, 500, 100, -1, 'box');
+            this.ennemy = new Crate('crate', this.game, 500, this.shipPosition, -1, 'box');
         }
 
+        this.ennemy.onReady.add(this.metronome.enable, this.metronome);
         this.ennemy.create();
     }
 
     _attack() {
         if (this.ennemy.ready && !this.ennemy.dead) {
             this.player.hit(this.ennemy.stats.damage);
-            this.game.camera.shake(0.001 * (this.player.stats.maxHealth - this.player.stats.health));
+            // this.game.camera.shake(0.001 * (this.player.stats.maxHealth - this.player.stats.health));
         }
     }
 }
