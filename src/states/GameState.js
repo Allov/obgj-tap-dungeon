@@ -48,6 +48,7 @@ export default class GameState extends Phaser.State {
         this.game.load.image('ennemy3', 'assets/ennemy3.svg');
         this.game.load.image('box', 'assets/box.svg');
         this.game.load.image('tech', 'assets/tech.svg');
+        this.game.load.image('laser', 'assets/laser.png');
         this.game.load.audio('game_audio', 'assets/dnd3-3.ogg');
     }
 
@@ -84,6 +85,13 @@ export default class GameState extends Phaser.State {
         this.player = new Player('player', this.game, -170, this.shipPosition, 1, 'player', { health: 20, damage: 1 });
         this.player.create();
 
+        this.weapon = this.game.add.weapon(30, 'laser');
+        this.weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+        this.weapon.bulletAngleOffset = 90;
+        this.weapon.bulletSpeed = 400;
+        this.weapon.fireRate = this.quarterNote;
+        this.weapon.bulletRotateToVelocity = true;
+
         this.loading = text(this.game, 'loading...', this.game.world.centerX, this.game.world.centerY, { fill: '#FFF' });
     }
 
@@ -95,13 +103,13 @@ export default class GameState extends Phaser.State {
             this.loading.visible = false;
         }
 
-        this.game.debug.text(`${this.player.stats.xp} xp`, 20, 40, '#0F0');
-        this.game.debug.text(`${this.player.stats.coins} coins`, 20, 60, '#0FF');
-        this.game.debug.text(`${this.player.stats.health} health`, 20, 80, '#F88');
+        // this.game.debug.text(`${this.player.stats.xp} xp`, 20, 40, '#0F0');
+        // this.game.debug.text(`${this.player.stats.coins} coins`, 20, 60, '#0FF');
+        // this.game.debug.text(`${this.player.stats.health} health`, 20, 80, '#F88');
 
-        if (this.nextAttack > this.game.time.now) {
-            this.game.debug.text(`${this.nextAttack - this.game.time.now}ms`, 400, 250, '#FF0');
-        }
+        // if (this.nextAttack > this.game.time.now) {
+        //     this.game.debug.text(`${this.nextAttack - this.game.time.now}ms`, 400, 250, '#FF0');
+        // }
 
         if (this.currentCombo || this.decaying) {
             this.decaying = true;
@@ -122,7 +130,7 @@ export default class GameState extends Phaser.State {
 
         if (this.ennemy.dead && !this.accelerate) {
             this.accelerate = true;
-            //this.metronome.disable();
+            this.metronome.disable();
             this.nextAttack = null;
             this.game.add.tween(this).to({ acceleration: 0.3 }, 3000, null, true, 0, 0)
                 .onComplete.add(() => {
@@ -151,11 +159,9 @@ export default class GameState extends Phaser.State {
     }
 
     _check(e, delay = 50) {
-        //if (!this.ennemy.ready || this.ennemy.dead) return;
+        if (!this.ennemy.ready || this.ennemy.dead) return;
 
         const timeLeft = this.metronome.untilNextBeat + this.metronome.bnb + delay; // +50ms for synchronisation? That's just for me though... need to adjust per player
-
-        console.log(timeLeft, this.thresholds.great, this.metronome.quarterNote);
 
         let failed = false;
         if (timeLeft > (this.metronome.quarterNote - this.thresholds.great) || timeLeft < this.thresholds.great) {
@@ -169,6 +175,9 @@ export default class GameState extends Phaser.State {
 
             if (this.nextAttack) this.nextAttack -= 500;
         }
+
+        const p = new Phaser.Point(this.player.sprite.x + 115, this.player.sprite.y + 41);
+        this.weapon.fire(p, this.ennemy.sprite.x + 50, this.ennemy.sprite.y + 50);
 
         const t = text(this.game, `${this.currentCombo.text}!`, this.game.world.centerX, this.game.world.centerY + 200, { font: 'bold 45px Lucida Console', fill: `rgba(${this.currentCombo.color}, 1)` });
         this.game.add.tween(t).to({ y: t.y - 50, alpha: 0 }, 1000, Phaser.Easing.Sinusoidal.Out, true, 0, 0, false)
@@ -221,7 +230,7 @@ export default class GameState extends Phaser.State {
     _attack() {
         if (this.ennemy.ready && !this.ennemy.dead) {
             this.player.hit(this.ennemy.stats.damage);
-            // this.game.camera.shake(0.001 * (this.player.stats.maxHealth - this.player.stats.health));
+            this.game.camera.shake(0.001 * (this.player.stats.maxHealth - this.player.stats.health));
         }
     }
 }

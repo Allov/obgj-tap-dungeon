@@ -85,7 +85,7 @@ export default class Metronome {
 
         this.pendulum.x += ((this.pendulumTarget - this.pendulum.x) / this.untilNextBeat) * this.game.time.elapsed;
 
-        this.game.debug.text(`x: ${this.bnb}`, 100, 300);
+        // this.game.debug.text(`x: ${this.bnb}`, 100, 300);
 
         if (this.pendulum.x >= this.pendulumTargetRight) {
             this.pendulum.x = this.pendulumTargetRight;
@@ -95,7 +95,7 @@ export default class Metronome {
             this.pendulumTarget = this.pendulumTargetRight;
         }
 
-        //this.game.debug.text(`ct: ${this.audio.currentTime.toFixed(0)}, lr: ${this.lastReported.toFixed(0)}, d: ${(this.audio.currentTime - this.lastReported).toFixed()}`, 100, 300);
+        // this.game.debug.text(`ct: ${this.audio.currentTime.toFixed(0)}, lr: ${this.lastReported.toFixed(0)}, d: ${(this.audio.currentTime - this.lastReported).toFixed()}`, 100, 300);
 
         // https://www.reddit.com/r/gamedev/comments/13y26t/how_do_rhythm_games_stay_in_sync_with_the_music/
         if (this.audio.currentTime != this.lastReported) {
