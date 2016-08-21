@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import GameState from '../States/GameState';
+import GameState from '../states/GameState';
 
 export default class Crate {
     constructor(name, game, x, y, direction, asset, stats, content) {

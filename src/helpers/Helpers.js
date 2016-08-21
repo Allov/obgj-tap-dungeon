@@ -1,5 +1,5 @@
 function font(settings) {
-    return Object.assign({}, { font: '45px Lucida Console', fill: '#fff', align: 'center' }, settings);
+    return Object.assign({}, { font: '45px Courier New', fill: '#fff', align: 'center' }, settings);
 }
 exports.font = font;
 

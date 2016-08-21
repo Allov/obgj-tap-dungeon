@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import Ship from './Ship';
-import GameState from '../States/GameState';
+import GameState from '../states/GameState';
 
 export default class Ennemy extends Ship {
     constructor(name, game, x, y, direction, asset, stats, content) {

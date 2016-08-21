@@ -4,12 +4,13 @@ export default class Player extends Ship {
     constructor(name, game, x, y, direction, asset, stats) {
         super(name, game, x, y, direction, asset, stats);
 
-        this.stats = Object.assign({}, this.stats, stats, {
+        this.stats = {
             health: 10,
             maxHealth: 10,
             xp: 0,
             coins: 0
-        });
+        };
+        this.stats = Object.assign({}, this.stats, stats);
     }
 
     award(content) {
