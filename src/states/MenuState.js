@@ -35,7 +35,7 @@ export default class MenuState extends Phaser.State {
 
     startGame() {
         this.audio.stop();
-        if (!this.game.device.desktop) {
+        if (!this.game.device.desktop && !this.game.scale.isFullScreen) {
             this.fullscreen();
         }
 
