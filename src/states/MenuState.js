@@ -2,15 +2,17 @@ import { config } from './StateConfig';
 import { text } from '../helpers/Helpers';
 
 export default class MenuState extends Phaser.State {
-    
+
     preload() {
-        this.game.load.audio('menu_audio', 'assets/hh1.ogg');
+        if (!this.game.cache.checkImageKey('player')) {
+            this.game.load.audio('menu_audio', 'assets/hh1.ogg');
+        }
     }
 
     create() {
-        this.audio = this.game.sound.play('menu_audio', 1, true);
+        this.audio = this.game.sound.play('menu_audio', 0.2, true);
         this.audio.play();
-        
+
         this.gameTitle = text(this.game, 'space\nbeat', this.game.world.centerX, this.game.world.centerY - 200, { font: "60px Courier New", fill: "#FFBA00" });
 
         this.playButton = text(this.game, 'play', this.game.world.centerX, this.game.world.centerY, { fill: '#CCC' });
@@ -42,7 +44,7 @@ export default class MenuState extends Phaser.State {
 
     toggleSound() {
         config.soundOn = !config.soundOn;
-        this.audio.mute = !config.soundOn;
+        this.game.sound.mute = !config.soundOn;
         this._setSoundText();
     }
 

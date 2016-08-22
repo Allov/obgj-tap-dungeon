@@ -1,61 +1,62 @@
 import _ from 'lodash';
 import GameState from '../states/GameState';
+import BaseObject from './BaseObject';
+import ColoredText from './ColoredText';
 
-export default class Crate {
+export default class Crate extends BaseObject {
     constructor(name, game, x, y, direction, asset, stats, content) {
-        this.name = name;
-        this.game = game;
-        this.x = x;
-        this.y = y;
-        this.direction = direction;
-        this.asset = asset;
+        super(name, game, x, y, direction, asset);
 
+        const greatCount = Math.rnd(2, 3);
         this.stats = Object.assign({}, this.stats, stats, {
-            nonFailures: 3,
+            nonFailures: greatCount,
             maximumFailures: 3
         });
 
         this.content = Object.assign({}, this.content, content, {
             xp: Math.rnd(5, 10),
-            coins: Math.rnd(2, 4)
+            coins: Math.rnd(2, 4),
+            damage: 0.25 * greatCount,
+            health: greatCount * 3,
         });
 
         this.failures = 0;
-
-        this.ready = false;
-        this.onReady = new Phaser.Signal();
     }
 
     create() {
-        this.sprite = this.game.add.sprite(this.x, this.y, this.asset);
-        this.sprite.alpha = 0;
-        this.sprite.scale.setTo(0.2);
-
-        const intro = this.game.add.tween(this.sprite).to({ x: this.x + (this.direction * 200), alpha: 1 }, 2000, 'Sine.easeInOut', true, 0, 0);
-        intro.onComplete.add(() => {
-            this.ready = true;
-            this.onReady.dispatch(this);
-        });
-
-        this.idle = this.game.add.tween(this.sprite).to( { x: this.x + (this.direction * 200), y: this.y + Math.rnd(7, 15) }, Math.rnd(500,700), 'Sine.easeInOut', false, -1, false, true);
-        intro.chain(this.idle);
+        super.create();
 
         this.state = this.game.state.states['GameState'];
         this.state.shoot.add(this._hit, this);
+
+        this.ct = new ColoredText(this.game, this.game.world.centerX, this.game.world.centerY + 50, '', { font: 'bold 18px Courier New', align: 'center' })
+        this.ct.anchor.x = 0.5;
+    }
+
+    render() {
+        this.text = `{#fff}Get {#ff0}${this.stats.nonFailures} {#f80}greats{#fff} to unlock\n`+
+                    `allowed failures: {#f00}${this.stats.maximumFailures - this.failures}{#fff}\n`+
+                    `\n`+
+                    `reward: {#99f}+${this.content.damage.toFixed(0)} damage {#0f0}+${this.content.health} health`;
+        this.ct.coloredText = this.text;
     }
 
     _hit(e) {
-        if (!_.isEqual(e.combo, GameState.Combos.FAILED)) {
-            this.stats.nonFailures -= 1;
+        if (_.isEqual(e.combo, GameState.Combos.GREAT)) {
+            this.stats.nonFailures--;
+            this.game.sound.play('great', 0.2);
         } else {
             this.failures++;
+            this.game.sound.play('error', 0.2);
         }
 
         if (this.stats.nonFailures <= 0) {
             e.shooter.award(this.content);
             this.kill();
+            this.game.sound.play('powerup', 0.2);
         } else if (this.failures >= this.stats.maximumFailures) {
             this.kill();
+            this.game.sound.play('explosion', 0.2);
         }
     }
 
@@ -64,8 +65,8 @@ export default class Crate {
         this.dead = true;
         this.game.add.tween(this.sprite).to({ x: this.x + 50, y: this.y + 20, alpha: 0 }, 1500, 'Sine.easeInOut', true, 0, 0);
         this.sprite.kill();
-        console.log(`${this.name} died.`, this.content);
         this.state.shoot.removeAll(this);
         this.ready = false;
+        this.ct.kill();
     }
 }

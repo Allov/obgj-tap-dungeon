@@ -5,7 +5,7 @@ import EndState from 'states/EndState';
 class Game extends Phaser.Game {
 
 	constructor() {
-		super(480, 800, Phaser.AUTO, 'content', null);
+		super(412, 732, Phaser.AUTO, 'content', null);
         this.state.add('MenuState', MenuState, false);
 		this.state.add('GameState', GameState, false);
 		this.state.add('EndState', EndState, false);
@@ -20,6 +20,12 @@ Math.rnd = (i, j) => {
 Math.chanceRoll = (chance) => {
     if (chance === undefined) { chance = 50; }
     return chance > 0 && (Math.random() * 100 <= chance);
+}
+
+Number.prototype.pad = function (size, c) {
+    let s = String(this);
+    while (s.length < (size || 2)) { s = (c || ' ') + s; }
+    return s;
 }
 
 new Game();

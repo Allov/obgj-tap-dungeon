@@ -34,31 +34,80 @@ export default class Metronome {
     create() {
         const difficultiesMap = this.game.add.bitmapData(this.w - 10, this.h);
 
-        const grd = difficultiesMap.context.createLinearGradient(0, 5, this.w, this.h - 10);
-        grd.addColorStop(0, '#0F0');
-        grd.addColorStop(0.15, '#F80');
-        grd.addColorStop(0.35, '#F00');
+        // const grd = difficultiesMap.context.createLinearGradient(0, 5, this.w, this.h - 10);
 
-        grd.addColorStop(0.65, '#F00');
-        grd.addColorStop(0.85, '#F80');
-        grd.addColorStop(1, '#0F0');
+        // grd.addColorStop(0, '#F80');
+        // grd.addColorStop(0.05, '#F80');
 
-        difficultiesMap.context.fillStyle = grd;
-        difficultiesMap.context.fillRect(0, 5, this.w, this.h - 10);
+        // grd.addColorStop(0.05, '#0F0');
+        // grd.addColorStop(0.1, '#0F0');
+
+        // grd.addColorStop(0.1, '#888');
+        // grd.addColorStop(0.2, '#888');
+
+        // grd.addColorStop(0.2, '#F00');
+        // grd.addColorStop(0.7, '#F00');
+
+        // grd.addColorStop(0.7, '#888');
+        // grd.addColorStop(0.8, '#888');
+
+        // grd.addColorStop(0.8, '#0F0');
+        // grd.addColorStop(0.9, '#0F0');
+
+        // grd.addColorStop(0.9, '#F80');
+        // grd.addColorStop(0.95, '#F80');
+
+        // difficultiesMap.context.fillStyle = grd;
+        // difficultiesMap.context.fillRect(0, 5, this.w - 10, this.h - 10);
+
+        // this.difficultiesMap = new Phaser.Graphics(0, 0);
+
+        // const w = this.w - 10;
+
+        // this.difficultiesMap.beginFill(0xFF8800);
+        // this.difficultiesMap.drawRect(0, 5, w * 0.05, this.h - 10);
+        // this.difficultiesMap.endFill();
+
+        // this.difficultiesMap.beginFill(0x00FF00);
+        // this.difficultiesMap.drawRect(w * 0.05, 5, w * 0.1, this.h - 10);
+        // this.difficultiesMap.endFill();
+
+        // this.difficultiesMap.beginFill(0x888888);
+        // this.difficultiesMap.drawRect(w * 0.1, 5, w * 0.2, this.h - 10);
+        // this.difficultiesMap.endFill();
+
+        // this.difficultiesMap.beginFill(0xFF0000);
+        // this.difficultiesMap.drawRect(w * 0.2, 5, w * 0.3, this.h - 10);
+        // this.difficultiesMap.endFill();
+
+        // this.difficultiesMap.beginFill(0x888888);
+        // this.difficultiesMap.drawRect(w * 0.8, 5, w * 0.1, this.h - 10);
+        // this.difficultiesMap.endFill();
+
+        // this.difficultiesMap.beginFill(0x00FF00);
+        // this.difficultiesMap.drawRect(w * 0.9, 5, w * 0.05, this.h - 10);
+        // this.difficultiesMap.endFill();
+
+        // this.difficultiesMap.beginFill(0xFF8800);
+        // this.difficultiesMap.drawRect(w * 0.95, 5, w, this.h - 10);
+        // this.difficultiesMap.endFill();
 
         this.group = this.game.add.group();
-
-        this.difficultyMap = this.group.create(this.x + 10, this.y, difficultiesMap);
+        this.difficultyMap = this.group.create(this.x + 10, this.y, this.difficultiesMap);
 
         const bar = new Phaser.Graphics(0, 0);
-        bar.lineStyle(2, 0xFFFFFF);
-        bar.drawRect(0, 0, this.w - 10, this.h - 10);
+        bar.lineStyle(2, 0xFFFF00);
+        //bar.drawRect(0, 0, this.w - 10, this.h - 10);
+        bar.beginFill(0xAAAA00);
+        bar.drawRect(0, 0, 28, this.h);
+        bar.drawRect(this.w - 28, 0, 28, this.h);
+        bar.endFill();
 
-        this.bar = this.group.create(this.x + 10, this.y + 5, bar.generateTexture());
+        this.bar = this.group.create(this.x-2, this.y-2, bar.generateTexture());
 
         const pendulum = new Phaser.Graphics(0, 0);
-        pendulum.lineStyle(1, 0xFFFFFF);
-        pendulum.beginFill(0xFFFFFF);
+        pendulum.lineStyle(1, 0x8888FF);
+        pendulum.beginFill(0x8888FF);
         pendulum.drawRect(0, 0, 20, this.h);
         pendulum.endFill();
 
@@ -70,13 +119,18 @@ export default class Metronome {
 
         this.time = 0;
         this.lastReported = this.time;
-        this.audio.onPlay.add(this._play, this);
+
+        if (this.audio.isPlaying) {
+            this._play();
+        } else {
+            this.audio.onPlay.add(this._play, this);
+        }
 
         this.group.alpha = 0;
     }
 
     render() {
-        if (!this.audio.isDecoded) {
+        if (!this.audio.isPlaying) {
             return;
         }
 

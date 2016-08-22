@@ -9,16 +9,18 @@ export default class Ennemy extends Ship {
         this.stats = {
             health: 10,
             damage: 1,
-            attackSpeed: 5000 // in ms
+            attackSpeed: Math.rnd(2000, 3000) // in ms
         };
         this.stats = Object.assign({}, this.stats, stats);
 
         this.content = {
             xp: Math.rnd(10, 20),
-            coins: Math.rnd(1, 2)
+            coins: Math.rnd(1, 2),
+            health: Math.rnd(0, 10)
         };
 
         this.content = Object.assign({}, this.content, content);
+        this.id = Math.rnd(1, 1000);
     }
 
     create() {
@@ -30,13 +32,18 @@ export default class Ennemy extends Ship {
 
     _hit(e) {
         if (!_.isEqual(e.combo, GameState.Combos.FAILED)) {
-            this.hit(e.shooter.stats.damage);
+            this.hit(e.shooter.stats.damage * e.combo.multiplier);
 
             if (this.dead) {
-                console.log(`${this.name} died.`, this.content);
-                e.shooter.award(this.content);
-                this.state.shoot.removeAll(this);
+                this.kill(e);
             }
         }
+    }
+
+    kill(e) {
+        if (e) {
+            e.shooter.award(this.content);
+        }
+        this.state.shoot.removeAll(this);
     }
 }
